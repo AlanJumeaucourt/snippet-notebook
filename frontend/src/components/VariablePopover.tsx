@@ -72,13 +72,17 @@ export function VariablePopover({
     }
   };
 
+  const pad = 12;
+  const popoverW = Math.min(420, window.innerWidth - pad * 2);
+  const popoverH = Math.min(320, window.innerHeight - pad * 2);
+
   return (
     <div
       ref={ref}
-      className="fixed z-50 min-w-[280px] max-w-[min(420px,calc(100vw-24px))] rounded-lg border border-(--border) bg-(--panel) shadow-[0_12px_40px_rgba(0,0,0,0.45)] p-3"
+      className="fixed z-50 min-w-[min(280px,calc(100vw-24px))] max-w-[min(420px,calc(100vw-24px))] rounded-lg border border-(--border) bg-(--panel) shadow-[0_12px_40px_rgba(0,0,0,0.45)] p-3 max-md:p-4"
       style={{
-        left: Math.max(8, Math.min(anchor.x, window.innerWidth - 300)),
-        top: Math.max(8, Math.min(anchor.y, window.innerHeight - 240)),
+        left: Math.max(pad, Math.min(anchor.x, window.innerWidth - popoverW - pad)),
+        top: Math.max(pad, Math.min(anchor.y, window.innerHeight - popoverH - pad)),
       }}
       onMouseDown={(e) => e.stopPropagation()}
     >

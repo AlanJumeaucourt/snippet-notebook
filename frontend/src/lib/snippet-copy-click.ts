@@ -1,9 +1,9 @@
+import { copyTextToClipboard } from "./clipboard";
+
 const COPIED_MS = 1000;
 
-export type SnippetCopyHandler = (
-  fenceStartLine: number,
-  source?: HTMLElement,
-) => boolean | Promise<boolean>;
+/** Resolve snippet text synchronously (must not await — mobile clipboard needs user gesture). */
+export type SnippetCopyHandler = (fenceStartLine: number) => string | null;
 
 let copyHandler: SnippetCopyHandler | null = null;
 
@@ -34,8 +34,9 @@ export function showSnippetCopyFeedback(source?: HTMLElement, fenceStartLine?: n
 }
 
 export function fireSnippetCopy(fenceStartLine: number, source?: HTMLElement): void {
-  void (async () => {
-    const copied = await copyHandler?.(fenceStartLine, source);
-    if (copied) showSnippetCopyFeedback(source, fenceStartLine);
-  })();
+  const text = copyHandler?.(fenceStartLine);
+  if (text == null) return;
+  copyTextToClipboard(text, (ok) => {
+    if (ok) showSnippetCopyFeedback(source, fenceStartLine);
+  });
 }

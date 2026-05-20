@@ -38,6 +38,7 @@ import {
   listInlinePlaceholders,
   resolvedSnippet,
 } from "~/lib/snippet-vars";
+import { copyTextToClipboard } from "~/lib/clipboard";
 import { addVarOption, updateVarValue } from "~/lib/vars-markdown";
 
 function applyFindQuery(view: EditorView, text: string) {
@@ -257,9 +258,9 @@ export function DocumentEditor({
     refreshFindStats(view);
   }, [refreshFindStats]);
 
-  const copyBlock = React.useCallback(async (block: CodeBlockAnchor) => {
+  const copyBlock = React.useCallback((block: CodeBlockAnchor, onDone?: (ok: boolean) => void) => {
     const text = resolvedSnippet(valueRef.current, block);
-    await navigator.clipboard.writeText(text);
+    copyTextToClipboard(text, onDone);
   }, []);
 
   const openResolvedPreview = React.useCallback((block: CodeBlockAnchor) => {
@@ -272,14 +273,13 @@ export function DocumentEditor({
   }, []);
 
   React.useEffect(() => {
-    setSnippetCopyHandler(async (fenceStartLine) => {
+    setSnippetCopyHandler((fenceStartLine) => {
       const block = findCodeBlockByFenceLine(valueRef.current, fenceStartLine);
-      if (!block) return false;
-      await copyBlock(block);
-      return true;
+      if (!block) return null;
+      return resolvedSnippet(valueRef.current, block);
     });
     return () => setSnippetCopyHandler(null);
-  }, [copyBlock]);
+  }, []);
 
   React.useEffect(() => {
     const view = viewRef.current;
@@ -427,7 +427,9 @@ export function DocumentEditor({
         const block = resolvedPreviewBlock ?? activeBlock;
         if (!block) return;
         e.preventDefault();
-        void copyBlock(block).then(() => showSnippetCopyFeedback(undefined, block.startLine));
+        copyBlock(block, (ok) => {
+          if (ok) showSnippetCopyFeedback(undefined, block.startLine);
+        });
       }
     };
     window.addEventListener("keydown", onKeyDown);
@@ -581,14 +583,14 @@ export function DocumentEditor({
         )}
         {findOpen && (
           <div
-            className="absolute top-2 left-2 right-2 z-20 flex items-center gap-1.5 px-2 py-1.5 rounded border border-(--border) bg-(--panel) shadow-md"
+            className="absolute top-2 left-2 right-2 z-20 flex items-center gap-1.5 px-2 py-1.5 rounded border border-(--border) bg-(--panel) shadow-md max-md:top-[max(0.5rem,env(safe-area-inset-top))] max-md:left-3 max-md:right-3 max-md:gap-2 max-md:py-2"
             role="search"
           >
             <button
               type="button"
               onClick={goFindPrevious}
               disabled={!findText.trim() || findStats.total === 0}
-              className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-(--text-muted) hover:text-(--text) hover:bg-(--input-bg) disabled:opacity-40 disabled:pointer-events-none"
+              className="shrink-0 w-7 h-7 max-md:w-9 max-md:h-9 flex items-center justify-center rounded text-(--text-muted) hover:text-(--text) hover:bg-(--input-bg) disabled:opacity-40 disabled:pointer-events-none"
               aria-label="Previous match"
               title="Previous match (Shift+Enter)"
             >
@@ -600,7 +602,7 @@ export function DocumentEditor({
               type="button"
               onClick={goFindNext}
               disabled={!findText.trim() || findStats.total === 0}
-              className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-(--text-muted) hover:text-(--text) hover:bg-(--input-bg) disabled:opacity-40 disabled:pointer-events-none"
+              className="shrink-0 w-7 h-7 max-md:w-9 max-md:h-9 flex items-center justify-center rounded text-(--text-muted) hover:text-(--text) hover:bg-(--input-bg) disabled:opacity-40 disabled:pointer-events-none"
               aria-label="Next match"
               title="Next match (Enter)"
             >
@@ -626,11 +628,11 @@ export function DocumentEditor({
               }}
               placeholder="Find…"
               autoFocus
-              className="flex-1 min-w-0 bg-(--input-bg) border border-(--border) rounded px-2 py-1 text-sm font-mono outline-none focus:border-(--accent-soft)"
+              className="flex-1 min-w-0 bg-(--input-bg) border border-(--border) rounded px-2 py-1 max-md:py-2 text-sm font-mono outline-none focus:border-(--accent-soft)"
             />
             {findStatsLabel ? (
               <span
-                className="shrink-0 min-w-18 text-right text-xs font-mono tabular-nums text-(--text-muted)"
+                className="shrink-0 min-w-18 max-md:min-w-14 text-right text-xs font-mono tabular-nums text-(--text-muted)"
                 aria-live="polite"
               >
                 {findStatsLabel}

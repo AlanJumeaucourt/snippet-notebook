@@ -71,7 +71,7 @@ class SnippetCopyWidget extends WidgetType {
     btn.dataset.fenceLine = String(this.fenceStartLine);
     btn.textContent = "Copy";
     btn.title = "Copy resolved snippet (Ctrl+Shift+C)";
-    btn.addEventListener("mousedown", (e) => {
+    btn.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
       fireSnippetCopy(this.fenceStartLine, btn);

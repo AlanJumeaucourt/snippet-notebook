@@ -1,6 +1,7 @@
 import * as React from "react";
 import type { CodeBlockAnchor } from "~/lib/document";
 import { extractVariableNames } from "~/lib/variables";
+import { copyTextToClipboard } from "~/lib/clipboard";
 import { resolvedSnippet } from "~/lib/snippet-vars";
 
 /** Expanded resolved preview (Ctrl/Cmd+click snippet). Inline **→ copy** is on each fence. */
@@ -21,10 +22,12 @@ export function SnippetBar({
 
   const resolved = resolvedSnippet(document, block);
 
-  const copy = async () => {
-    await navigator.clipboard.writeText(resolved);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1000);
+  const copy = () => {
+    copyTextToClipboard(resolved, (ok) => {
+      if (!ok) return;
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1000);
+    });
   };
 
   const panelTop = panelAnchor ? panelAnchor.top : undefined;

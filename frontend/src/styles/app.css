@@ -127,6 +127,7 @@
   .cm-snippet-copy-btn {
     margin-left: 0.5em;
     padding: 1px 6px;
+    touch-action: manipulation;
     font-size: 10px;
     line-height: 1.35;
     font-weight: 500;
@@ -167,6 +168,25 @@
     cursor: pointer;
     background: none;
     border: none;
+  }
+}
+
+/* Mobile: full-width editor, tighter gutters, readable side padding */
+@media (max-width: 767px) {
+  .cm-editor-host .cm-content {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .cm-editor-host .cm-lineNumbers .cm-gutterElement {
+    padding: 0 6px 0 8px;
+    min-width: 2.5ch;
+  }
+
+  .cm-snippet-copy-btn {
+    padding: 3px 8px;
+    font-size: 11px;
+    touch-action: manipulation;
   }
 }
 

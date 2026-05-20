@@ -2,6 +2,7 @@ import * as React from "react";
 import { DocumentEditor } from "~/components/DocumentEditor";
 import { useNotebook } from "~/hooks/useNotebook";
 import { extractHeadingAnchors } from "~/lib/document";
+import { copyTextToClipboard } from "~/lib/clipboard";
 import { documentForSharing } from "~/lib/vars-markdown";
 
 const LEVEL_BORDER = [
@@ -66,7 +67,7 @@ export function SnippetNotebook() {
 
   if (!api.hydrated) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center gap-3 bg-[var(--bg)] text-[var(--text)]">
+      <div className="h-dvh flex flex-col items-center justify-center gap-3 bg-[var(--bg)] text-[var(--text)]">
         <div
           className="w-8 h-8 rounded-full border-2 border-[var(--border)] border-t-[var(--accent-soft)] animate-spin"
           aria-hidden
@@ -77,8 +78,8 @@ export function SnippetNotebook() {
   }
 
   return (
-    <div className="h-screen flex overflow-hidden bg-[var(--bg)] text-[var(--text)]">
-      <aside className="w-56 shrink-0 flex flex-col border-r border-[var(--border)] bg-[var(--sidebar)] shadow-[4px_0_24px_rgba(0,0,0,0.25)]">
+    <div className="h-dvh flex overflow-hidden bg-[var(--bg)] text-[var(--text)] max-md:pt-[env(safe-area-inset-top)] max-md:pb-[env(safe-area-inset-bottom)]">
+      <aside className="hidden md:flex w-56 shrink-0 flex-col border-r border-[var(--border)] bg-[var(--sidebar)] shadow-[4px_0_24px_rgba(0,0,0,0.25)]">
         <div className="px-3 py-3 border-b border-[var(--border)] bg-[var(--sidebar-top)]">
           <div className="flex items-center gap-2">
             <span
@@ -131,11 +132,11 @@ export function SnippetNotebook() {
           <button
             type="button"
             onClick={() => {
-              void (async () => {
-                await navigator.clipboard.writeText(documentForSharing(api.document));
+              copyTextToClipboard(documentForSharing(api.document), (ok) => {
+                if (!ok) return;
                 setShareCopied(true);
                 window.setTimeout(() => setShareCopied(false), 1500);
-              })();
+              });
             }}
             className={`w-full px-2 py-1.5 text-left text-sm rounded-md transition-colors ${
               shareCopied

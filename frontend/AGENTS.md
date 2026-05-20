@@ -112,6 +112,7 @@ If you implement a fix for owner feedback and the rule is not already listed her
 
 - **Sublime-like** — minimal chrome, keyboard-first, easy to read and write; very few buttons.
 - **One page** — left sidebar (heading TOC) + main editor only; infinite scroll in the editor.
+- **Mobile** — below `md` (768px) hide the left sidebar; editor uses full width (`hidden md:flex` on aside in `SnippetNotebook.tsx`). Sidebar actions (outline jump, Copy for sharing, + Section, Reset) are desktop-only; **Ctrl/Cmd+N** still adds a section on mobile.
 - **Personal doc first** — full markdown notebook, not a snippet-only tool; snippets are fenced code blocks.
 - **Markdown is the only database** — global/local variables live in `vars` fences; no separate var store in `localStorage`.
 - **No legacy** — greenfield app; do not add migration shims unless explicitly requested.
@@ -121,7 +122,7 @@ If you implement a fix for owner feedback and the rule is not already listed her
 - **No bottom variables panel** — removed on purpose; all var UX is inline in the editor.
 - **Click `{{name}}`** in code or `vars` fences → `VariablePopover` (multi-choice list + add field).
 - **Green `→ value (LABEL)`** preview after placeholders shows what copy will use; preview is clickable too.
-- **Copy snippet** — every fenced code block (` ```lang `, any language) shows a small inline **Copy** button on the opening fence line; click copies the block (`{{…}}` resolved when present). **Ctrl/Cmd+Shift+C** when the cursor is in that block (`codemirror-variables.ts`, `snippet-copy-click.ts`).
+- **Copy snippet** — every fenced code block (` ```lang `, any language) shows a small inline **Copy** button on the opening fence line; click copies the block (`{{…}}` resolved when present). **Ctrl/Cmd+Shift+C** when the cursor is in that block (`codemirror-variables.ts`, `snippet-copy-click.ts`). Clipboard must run synchronously from the click handler (`copyTextToClipboard` in `clipboard.ts`); use `click` on the widget, not `await` before `writeText` (mobile WebKit).
 - **Resolved snippet preview** — optional; opens on **Ctrl/Cmd+click** on a `{{placeholder}}`, green preview, or anywhere in a snippet code block (not on cursor enter). Plain click on placeholder → variable popover only. Preview text is **selectable** (`user-select: text`). **Escape** or **×** closes preview (`SnippetBar.tsx`, `resolvedPreviewClickExtension`).
 - **Multi-option vars** — picker must work on click; adding a value must not produce `value | value` when label equals value (`formatVarLine`).
 - **Plain add** — user enters one token only; use `LABEL:value` in the add field only when a friendly picker label is needed.
