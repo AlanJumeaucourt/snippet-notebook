@@ -45,3 +45,15 @@ Contributors and AI agents: see **`AGENTS.md`** (especially **Product decisions 
 ```sh
 vp build
 ```
+
+## Deploy (Render Static Site)
+
+Build emits a static site in `.output/public/` (including `index.html`).
+
+| Setting | Value |
+|--------|--------|
+| Root Directory | `frontend` |
+| Build Command | `bun install && bun run build` |
+| Publish Directory | `.output/public` |
+
+Do **not** publish `.output/server/` — that folder is only used during the build.
