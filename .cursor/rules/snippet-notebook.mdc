@@ -1,0 +1,14 @@
+---
+description: Snippet Notebook — architecture and UX decisions; prevents AI regressions on editor, find, and variables
+globs: frontend/**
+alwaysApply: false
+---
+
+Before changing editor, find (Ctrl+F), variables, popover, sidebar, or layout in `frontend/`:
+
+1. Read **`frontend/AGENTS.md`** — section **Product decisions (do not regress)**.
+2. Use skill **snippet-notebook** (`.cursor/skills/snippet-notebook/SKILL.md`) for file pointers.
+
+**When the user states a lasting UX preference or “do not regress” remark:** append it yourself to **Product decisions** in `frontend/AGENTS.md` (see **Maintaining this section**) in the same session as the code change. Do not ask them to update docs manually.
+
+Do not reintroduce a bottom variables panel, CM’s built-in search panel, or credential-filled defaults unless the user explicitly asks.

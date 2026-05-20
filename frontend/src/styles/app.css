@@ -1,0 +1,203 @@
+@import "tailwindcss" source("../");
+
+@theme {
+  --font-mono: ui-monospace, "SF Mono", "Fira Code", Menlo, Monaco, Consolas, monospace;
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+@layer base {
+  :root {
+    --bg: #1e1e1e;
+    --sidebar: #252526;
+    --sidebar-top: #2d2d30;
+    --panel: #252526;
+    --editor: #1e1e1e;
+    --code-bg: #1a1a1a;
+    --border: #3e3e42;
+    --border-subtle: #2d2d30;
+    --text: #d4d4d4;
+    --text-bright: #ffffff;
+    --text-muted: #858585;
+    --accent: #ce9178;
+    --accent-soft: #569cd6;
+    --purple: #c678dd;
+    --cyan: #56b6c2;
+    --green: #98c379;
+    --selection: #264f78;
+    --hover: #2a2d2e;
+    --input-bg: #3c3c3c;
+    --danger: #f48771;
+    --glow: rgba(86, 156, 246, 0.15);
+  }
+
+  html,
+  body {
+    height: 100%;
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    color: var(--text);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  ::selection {
+    background: var(--selection);
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #424242 var(--sidebar);
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: #424242;
+    border-radius: 4px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: #4e4e4e;
+  }
+
+  .cm-internal-link {
+    color: var(--accent-soft);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+  }
+
+  /* Same look for every {{name}} — overrides shell $variable / string tokens */
+  .cm-editor-host .cm-variable-placeholder,
+  .cm-editor-host .cm-variable-placeholder * {
+    color: #e5b3ff !important;
+    font-style: normal !important;
+    font-weight: 600 !important;
+    text-decoration: inherit;
+  }
+
+  .cm-editor-host .cm-variable-placeholder {
+    box-shadow: inset 0 0 0 1px rgba(198, 120, 221, 0.45);
+    border-radius: 3px;
+  }
+
+  .cm-editor-host .cm-variable-placeholder * {
+    background-color: transparent !important;
+  }
+
+  /* Native text selection (drawSelection disabled — layer sat under syntax/active line) */
+  .cm-editor-host .cm-content ::selection,
+  .cm-editor-host .cm-line::selection,
+  .cm-editor-host .cm-line *::selection {
+    background-color: var(--selection) !important;
+    color: inherit !important;
+  }
+
+  .cm-variable-clickable {
+    cursor: pointer;
+    text-decoration: underline dotted;
+    text-decoration-color: rgba(198, 120, 221, 0.7);
+    text-underline-offset: 3px;
+  }
+
+  .cm-var-preview-clickable {
+    cursor: pointer;
+    pointer-events: auto;
+    user-select: none;
+  }
+
+  .cm-var-preview-clickable:hover {
+    filter: brightness(1.15);
+    text-decoration: underline;
+    text-decoration-color: var(--green);
+  }
+
+  .cm-snippet-copy-btn {
+    margin-left: 0.5em;
+    padding: 1px 6px;
+    font-size: 10px;
+    line-height: 1.35;
+    font-weight: 500;
+    color: var(--accent-soft);
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    vertical-align: baseline;
+    pointer-events: auto;
+    user-select: none;
+  }
+
+  .cm-snippet-copy-btn:hover {
+    color: var(--text-bright);
+    background: var(--hover);
+    border-color: var(--accent-soft);
+  }
+
+  .cm-snippet-copy-btn--copied {
+    color: var(--green) !important;
+    border-color: var(--green) !important;
+    background: color-mix(in srgb, var(--green) 12%, var(--input-bg)) !important;
+  }
+
+  input,
+  select,
+  button {
+    font-family: inherit;
+    color: inherit;
+  }
+
+  select {
+    cursor: pointer;
+  }
+
+  button {
+    cursor: pointer;
+    background: none;
+    border: none;
+  }
+}
+
+/* CodeMirror host */
+.cm-editor-host {
+  height: 100%;
+}
+
+.cm-editor-host .cm-editor {
+  height: 100%;
+}
+
+.cm-editor-host .cm-editor.cm-focused {
+  outline: none;
+}
+
+/* Find highlights (theme also sets these; keep for specificity over syntax tokens) */
+.cm-editor-host .cm-searchMatch {
+  background-color: rgba(86, 156, 246, 0.42) !important;
+  border-radius: 2px;
+  box-shadow: inset 0 -2px 0 rgba(86, 156, 246, 0.85);
+}
+
+.cm-editor-host .cm-searchMatch-selected {
+  background-color: rgba(206, 145, 120, 0.5) !important;
+  box-shadow:
+    inset 0 -2px 0 rgba(206, 145, 120, 1),
+    0 0 0 1px rgba(206, 145, 120, 0.65);
+}
+
+/* Room above line 1 while the find bar overlays the editor */
+.cm-editor-host.cm-find-open .cm-content {
+  padding-top: calc(16px + var(--find-bar-pad, 48px));
+}
