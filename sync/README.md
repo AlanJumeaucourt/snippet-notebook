@@ -9,19 +9,24 @@ The browser app encrypts the room with the **passphrase** (`y-webrtc` `password`
 
 ## Deploy signaling
 
+**Unikraft Cloud (recommended):**
+
 ```sh
 cd sync/signaling
-bun install   # or npm install
-PORT=4444 bun run start
+SIGNALING_BUILD=1 ./deploy.sh   # first time
+./deploy.sh                     # redeploy image
 ```
 
-Point the frontend at it (`frontend/.env.local`):
+See [`sync/signaling/README.md`](signaling/README.md).
 
-```env
-VITE_SYNC_SIGNALING_URLS=wss://signaling.your-domain:4444
+**Local dev:**
+
+```sh
+cd sync/signaling
+bun install && PORT=4444 bun run start
+# frontend/.env.local
+VITE_SYNC_SIGNALING_URLS=ws://localhost:4444
 ```
-
-Put TLS in front (Caddy/nginx) for production `wss://`.
 
 ## Deploy TURN on Unikraft Cloud (recommended)
 

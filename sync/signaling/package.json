@@ -3,9 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "y-webrtc-signaling"
+    "start": "node server.js",
+    "start:legacy": "y-webrtc-signaling"
   },
   "dependencies": {
-    "y-webrtc": "^10.3.0"
+    "lib0": "^0.2.99",
+    "ws": "^8.18.0"
   }
 }
