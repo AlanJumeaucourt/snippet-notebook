@@ -1,0 +1,9 @@
+spec: v0.6
+
+runtime: base-compat:latest
+
+rootfs:
+  source: ./Dockerfile
+  format: erofs
+
+cmd: ["/etc/coturn/docker-entrypoint-unikraft.sh"]

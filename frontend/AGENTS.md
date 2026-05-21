@@ -29,6 +29,7 @@ Use `vp` for package management (see Vite+ section below). Do not commit secrets
 | CM theme + fences              | `src/lib/codemirror-theme.ts`, `codemirror-extensions.ts`                    |
 | Fenced code highlight          | `src/lib/codemirror-languages.ts` (`@codemirror/language-data`)              |
 | Persistence                    | `src/lib/storage.ts` — key `snippet-notebook`, `{ document: string }` only   |
+| P2P sync                       | `src/lib/sync/*`, `src/hooks/useNotebookSync.ts`, `SyncPanel.tsx` — Yjs/WebRTC; see `sync/README.md` |
 | Hook                           | `src/hooks/useNotebook.ts`                                                   |
 
 **No bottom variables panel.** All var UX is inline: click `{{name}}`, snippet bar when cursor is in a code block with placeholders.
@@ -114,6 +115,7 @@ If you implement a fix for owner feedback and the rule is not already listed her
 - **One page** — left sidebar (heading TOC) + main editor only; infinite scroll in the editor.
 - **Sidebar headings** — only markdown `#` … `######` lines **outside** fenced code/vars blocks; `#` shell/Python comments inside ` ``` ` fences must not appear in the outline (`extractHeadingAnchors` in `document.ts`).
 - **Mobile** — below `md` (768px) hide the left sidebar; editor uses full width (`hidden md:flex` on aside in `SnippetNotebook.tsx`). Sidebar actions (outline jump, Copy for sharing, + Section, Reset) are desktop-only; **Ctrl/Cmd+N** still adds a section on mobile.
+- **P2P sync** — optional WebRTC (Yjs + `y-webrtc`); room passphrase encrypts traffic; no server stores the notebook (signaling/TURN only). Sidebar **Sync** panel; `VITE_SYNC_*` env for infra URLs (`frontend/.env.example`, `sync/README.md`).
 - **Personal doc first** — full markdown notebook, not a snippet-only tool; snippets are fenced code blocks.
 - **Markdown is the only database** — global/local variables live in `vars` fences; no separate var store in `localStorage`.
 - **No legacy** — greenfield app; do not add migration shims unless explicitly requested.

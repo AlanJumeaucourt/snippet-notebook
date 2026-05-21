@@ -37,6 +37,7 @@ Open [http://localhost:3000](http://localhost:3000).
 - **New section** — `Ctrl+N` or “+ Section” at the bottom of the sidebar.
 - **Find** — `Ctrl+F` / `Cmd+F`: overlay search bar, match highlights, `3 / 12` counter, ▲/▼ (Shift+Enter / Enter).
 - Data is stored in `localStorage` under `snippet-notebook`.
+- **Sync (optional)** — sidebar **Sync**: same room name + passphrase on each device; realtime P2P edit via WebRTC (no notebook stored on a sync server). Configure signaling/TURN in `.env.local` — see `frontend/.env.example` and [`sync/README.md`](../sync/README.md).
 
 Contributors and AI agents: see **`AGENTS.md`** (especially **Product decisions (do not regress)**) for UX rules accumulated from project feedback.
 

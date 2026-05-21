@@ -1,5 +1,6 @@
 import * as React from "react";
 import { DocumentEditor } from "~/components/DocumentEditor";
+import { MobileSyncBadge, SyncPanel } from "~/components/SyncPanel";
 import { useNotebook } from "~/hooks/useNotebook";
 import { extractHeadingAnchors } from "~/lib/document";
 import { copyTextToClipboard } from "~/lib/clipboard";
@@ -24,6 +25,7 @@ export function SnippetNotebook() {
   );
   const [scrollToLine, setScrollToLine] = React.useState<number | null>(null);
   const [shareCopied, setShareCopied] = React.useState(false);
+  const [mobileSyncOpen, setMobileSyncOpen] = React.useState(false);
 
   const headings = React.useMemo(() => extractHeadingAnchors(api.document), [api.document]);
 
@@ -128,6 +130,7 @@ export function SnippetNotebook() {
             );
           })}
         </nav>
+        <SyncPanel sync={api.sync} />
         <div className="border-t border-[var(--border)] p-2 space-y-1">
           <button
             type="button"
@@ -179,7 +182,29 @@ export function SnippetNotebook() {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-[var(--editor)]">
+        <div className="md:hidden shrink-0 border-b border-[var(--border)] bg-[var(--panel)]">
+          <div className="px-3 py-2 flex items-center gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-[var(--text-bright)]">
+              Snippet Notebook
+            </span>
+            <span className="flex-1" />
+            <button
+              type="button"
+              onClick={() => setMobileSyncOpen((v) => !v)}
+              className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-[var(--hover)]"
+              aria-expanded={mobileSyncOpen}
+            >
+              <MobileSyncBadge sync={api.sync} />
+            </button>
+          </div>
+          {mobileSyncOpen && (
+            <div className="border-t border-[var(--border)]">
+              <SyncPanel sync={api.sync} />
+            </div>
+          )}
+        </div>
         <DocumentEditor
+          key={api.sync.active ? "sync" : "local"}
           value={api.document}
           onChange={api.setDocument}
           onActiveHeadingChange={setActiveHeadingId}
@@ -187,6 +212,7 @@ export function SnippetNotebook() {
           activeBlock={activeBlock}
           scrollToHeadingLine={scrollToLine}
           onScrollToHeadingDone={() => setScrollToLine(null)}
+          collab={api.sync.collab}
         />
       </div>
     </div>

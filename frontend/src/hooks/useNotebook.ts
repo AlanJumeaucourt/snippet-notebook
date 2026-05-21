@@ -2,6 +2,8 @@ import * as React from "react";
 import { debounce } from "~/lib/debounce";
 import { appendSectionMarkdown } from "~/lib/document";
 import { clearNotebookStorage, initialNotebook, loadNotebook, saveNotebook } from "~/lib/storage";
+import { applyYTextDocument } from "~/lib/sync/ytext-document";
+import { useNotebookSync } from "~/hooks/useNotebookSync";
 import type { NotebookData } from "~/lib/types";
 import {
   addVarOption,
@@ -14,12 +16,28 @@ import {
 export function useNotebook() {
   const [data, setData] = React.useState<NotebookData>(initialNotebook);
   const [hydrated, setHydrated] = React.useState(false);
+  const documentRef = React.useRef(data.document);
+  documentRef.current = data.document;
 
   React.useEffect(() => {
     const stored = loadNotebook();
     if (stored) setData(stored);
     setHydrated(true);
   }, []);
+
+  const sync = useNotebookSync(() => documentRef.current, { enabled: hydrated });
+
+  React.useEffect(() => {
+    if (!sync.collab) return;
+    const { ytext } = sync.collab;
+    const onRemote = () => setData({ document: ytext.toString() });
+    ytext.observe(onRemote);
+    const merged = ytext.toString();
+    if (merged !== documentRef.current) {
+      setData({ document: merged });
+    }
+    return () => ytext.unobserve(onRemote);
+  }, [sync.collab]);
 
   const saveDebounced = React.useMemo(
     () => debounce((next: NotebookData) => saveNotebook(next), 400),
@@ -31,9 +49,15 @@ export function useNotebook() {
     saveDebounced(data);
   }, [data, hydrated, saveDebounced]);
 
-  const setDocument = React.useCallback((document: string) => {
-    setData({ document });
-  }, []);
+  const setDocument = React.useCallback(
+    (document: string) => {
+      if (sync.collab) {
+        applyYTextDocument(sync.collab.ytext, document, "local");
+      }
+      setData({ document });
+    },
+    [sync.collab],
+  );
 
   const parsed = React.useMemo(
     () => ({
@@ -106,5 +130,6 @@ export function useNotebook() {
     getBlockLocalVars,
     addSection,
     resetToDefault,
+    sync,
   };
 }

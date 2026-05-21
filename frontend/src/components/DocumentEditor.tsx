@@ -39,7 +39,10 @@ import {
   resolvedSnippet,
 } from "~/lib/snippet-vars";
 import { copyTextToClipboard } from "~/lib/clipboard";
+import type { NotebookCollab } from "~/lib/sync/session";
+import { applyYTextDocument } from "~/lib/sync/ytext-document";
 import { addVarOption, updateVarValue } from "~/lib/vars-markdown";
+import { yCollab } from "y-codemirror.next";
 
 function applyFindQuery(view: EditorView, text: string) {
   view.dispatch({
@@ -75,6 +78,7 @@ export function DocumentEditor({
   activeBlock,
   scrollToHeadingLine,
   onScrollToHeadingDone,
+  collab,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -83,6 +87,7 @@ export function DocumentEditor({
   activeBlock: CodeBlockAnchor | null;
   scrollToHeadingLine: number | null;
   onScrollToHeadingDone: () => void;
+  collab?: NotebookCollab | null;
 }) {
   const editorPanelRef = React.useRef<HTMLDivElement>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -151,6 +156,8 @@ export function DocumentEditor({
   } | null>(null);
   const onChangeRef = React.useRef(onChange);
   const valueRef = React.useRef(value);
+  const collabRef = React.useRef(collab);
+  collabRef.current = collab;
   const headingsCacheRef = React.useRef<HeadingAnchor[]>([]);
   const contextRef = React.useRef({
     onActiveHeadingChange,
@@ -194,6 +201,14 @@ export function DocumentEditor({
 
   const applyDocFromUI = React.useCallback(
     (newDoc: string) => {
+      const c = collabRef.current;
+      if (c) {
+        applyYTextDocument(c.ytext, newDoc, "var-ui");
+        valueRef.current = newDoc;
+        onChangeRef.current(newDoc);
+        requestAnimationFrame(() => viewRef.current?.focus());
+        return;
+      }
       const view = viewRef.current;
       if (!view) {
         valueRef.current = newDoc;
@@ -463,10 +478,14 @@ export function DocumentEditor({
     const parent = containerRef.current;
     if (!parent) return;
 
+    const collabNow = collabRef.current;
     const state = EditorState.create({
-      doc: value,
+      doc: collabNow ? collabNow.ytext.toString() : value,
       extensions: [
         ...notebookExtensions(),
+        ...(collabNow
+          ? [yCollab(collabNow.ytext, collabNow.awareness, { undoManager: collabNow.undoManager })]
+          : []),
         ...variableInlineExtension(),
         resolvedPreviewClickExtension(
           () => contextRef.current.value,
@@ -533,11 +552,15 @@ export function DocumentEditor({
       view.destroy();
       viewRef.current = null;
     };
-  }, [updateContext, openResolvedPreview, refreshFindStatsDebounced]);
+  }, [updateContext, openResolvedPreview, refreshFindStatsDebounced, collab]);
 
   React.useLayoutEffect(() => {
     const view = viewRef.current;
     if (!view) return;
+    if (collabRef.current) {
+      valueRef.current = value;
+      return;
+    }
     const current = view.state.doc.toString();
 
     if (pendingHistorySyncRef.current) {

@@ -10,3 +10,6 @@ frontend/.cache
 frontend/.vite
 start-basic/
 frontend/build
+
+sync/turn/.unikraft
+sync/signaling/node_modules

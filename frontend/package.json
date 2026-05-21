@@ -22,8 +22,13 @@
     "@tanstack/react-router-devtools": "^1.167.0",
     "@tanstack/react-start": "^1.168.7",
     "codemirror": "^6.0.2",
+    "lib0": "^0.2.117",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "y-codemirror.next": "^0.3.5",
+    "y-indexeddb": "^9.0.12",
+    "y-webrtc": "^10.3.0",
+    "yjs": "^13.6.30"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.2.2",
