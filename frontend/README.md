@@ -2,7 +2,7 @@
 
 A one-page snippet manager with a Sublime Text–style interface: left sidebar, monospace editor, minimal chrome.
 
-One **full-page markdown editor** for personal docs: headings, notes, lists, and fenced code blocks in a single scrollable file. The left sidebar is a table of contents from `#` / `##` / `###` headings and **follows your scroll position**.
+One **full-page markdown editor** for personal docs: headings, notes, lists, and fenced code blocks in a single scrollable file. The left sidebar is a table of contents from `#` / `##` / `###` headings **outside** code fences (lines like `# comment` inside a ` ```bash ` block are not headings) and **follows your scroll position**.
 
 Variables are stored **in the markdown** as `vars` code blocks. Place the cursor inside a snippet to edit local overrides; global vars apply everywhere.
 

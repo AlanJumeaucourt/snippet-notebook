@@ -43,15 +43,7 @@ export function internalLinkTargetAt(doc: string, pos: number): string | null {
 }
 
 export function findHeadingLineByAnchorId(doc: string, anchorId: string): number | null {
-  const slugCounts = new Map<string, number>();
-  const lines = doc.split("\n");
-  for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-    const m = lines[lineIndex].match(HEADING_RE);
-    if (!m) continue;
-    const id = headingIdForText(m[2].trim(), slugCounts);
-    if (id === anchorId) return lineIndex;
-  }
-  return null;
+  return extractHeadingAnchors(doc).find((h) => h.id === anchorId)?.line ?? null;
 }
 
 export function parseDocument(doc: string): DocNode[] {
@@ -119,8 +111,17 @@ export function extractHeadingAnchors(doc: string): HeadingAnchor[] {
   const lines = doc.split("\n");
   const slugCounts = new Map<string, number>();
   const anchors: HeadingAnchor[] = [];
+  let inFence = false;
 
   lines.forEach((line, lineIndex) => {
+    if (FENCE_OPEN_RE.test(line)) {
+      inFence = true;
+      return;
+    }
+    if (inFence) {
+      if (/^```\s*$/.test(line)) inFence = false;
+      return;
+    }
     const match = line.match(HEADING_RE);
     if (!match) return;
     const text = match[2].trim();

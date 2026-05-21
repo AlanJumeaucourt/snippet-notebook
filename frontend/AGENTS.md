@@ -112,6 +112,7 @@ If you implement a fix for owner feedback and the rule is not already listed her
 
 - **Sublime-like** — minimal chrome, keyboard-first, easy to read and write; very few buttons.
 - **One page** — left sidebar (heading TOC) + main editor only; infinite scroll in the editor.
+- **Sidebar headings** — only markdown `#` … `######` lines **outside** fenced code/vars blocks; `#` shell/Python comments inside ` ``` ` fences must not appear in the outline (`extractHeadingAnchors` in `document.ts`).
 - **Mobile** — below `md` (768px) hide the left sidebar; editor uses full width (`hidden md:flex` on aside in `SnippetNotebook.tsx`). Sidebar actions (outline jump, Copy for sharing, + Section, Reset) are desktop-only; **Ctrl/Cmd+N** still adds a section on mobile.
 - **Personal doc first** — full markdown notebook, not a snippet-only tool; snippets are fenced code blocks.
 - **Markdown is the only database** — global/local variables live in `vars` fences; no separate var store in `localStorage`.
