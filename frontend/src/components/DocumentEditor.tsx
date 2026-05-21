@@ -47,6 +47,12 @@ function applyFindQuery(view: EditorView, text: string) {
   });
 }
 
+function selectedTextFromView(view: EditorView): string | null {
+  const { from, to } = view.state.selection.main;
+  if (from === to) return null;
+  return view.state.sliceDoc(from, to);
+}
+
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   if (target.isContentEditable) return true;
@@ -244,6 +250,24 @@ export function DocumentEditor({
     viewRef.current?.focus();
   }, []);
 
+  const openFind = React.useCallback(() => {
+    const view = viewRef.current;
+    const fromSelection = view ? selectedTextFromView(view) : null;
+    const query =
+      fromSelection != null && fromSelection.length > 0 ? fromSelection : findTextRef.current;
+    setFindText(query);
+    setFindOpen(true);
+    requestAnimationFrame(() => {
+      findInputRef.current?.focus();
+      findInputRef.current?.select();
+      const v = viewRef.current;
+      if (v && query.trim()) {
+        applyFindQuery(v, query);
+        refreshFindStatsRef.current(v);
+      }
+    });
+  }, []);
+
   const goFindNext = React.useCallback(() => {
     const view = viewRef.current;
     if (!view || !findTextRef.current.trim()) return;
@@ -414,8 +438,7 @@ export function DocumentEditor({
       }
       if ((e.metaKey || e.ctrlKey) && e.key === "f") {
         e.preventDefault();
-        setFindOpen(true);
-        requestAnimationFrame(() => findInputRef.current?.select());
+        openFind();
       }
       if (e.key === "Escape" && resolvedPreviewBlock) {
         e.preventDefault();
@@ -434,7 +457,7 @@ export function DocumentEditor({
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [activeBlock, resolvedPreviewBlock, copyBlock]);
+  }, [activeBlock, resolvedPreviewBlock, copyBlock, openFind]);
 
   React.useEffect(() => {
     const parent = containerRef.current;

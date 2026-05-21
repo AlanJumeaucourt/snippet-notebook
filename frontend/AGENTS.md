@@ -84,7 +84,7 @@ ssh {{user_id}}@host#{{target_host}}@jump.example.com
 
 | Action | Shortcut |
 |--------|----------|
-| Find | Ctrl/Cmd+F |
+| Find | Ctrl/Cmd+F — opens find with the current editor selection as the query when text is selected |
 | Find next / previous | Enter / Shift+Enter (also ▼ / ▲ on find bar) |
 | New section | Ctrl/Cmd+N |
 | Copy snippet | **Copy** button on each ` ```lang ` fence; Ctrl/Cmd+Shift+C in block |
@@ -140,6 +140,7 @@ Custom find bar in `DocumentEditor.tsx` — **not** CodeMirror’s built-in sear
 | Requirement | Implementation |
 |-------------|----------------|
 | Simple search, not fancy chrome | Floating overlay bar; no separate replace UI unless requested |
+| Selection seeds find | **Ctrl/Cmd+F** with a non-empty editor selection pre-fills the find field and highlights matches (`DocumentEditor.tsx` `openFind`) |
 | Must not “move the whole notebook” | Overlay does not shrink editor column; `scrollToSearchMatchIfNeeded` (scroll only if match off-screen, `y: 'nearest'`); sidebar `scrollIntoView` only when active heading is **outside** nav viewport |
 | First line readable under find bar | `cm-find-open` extra `.cm-content` padding + `findBarScrollMargin` / `FIND_BAR_CONTENT_PAD` in `editor.ts` |
 | Match highlights visible | Built-in CM highlighter skips when `panel == null` — use **`findHighlightPlugin`** in `codemirror-extensions.ts` + theme/CSS `.cm-searchMatch` / `.cm-searchMatch-selected` |
