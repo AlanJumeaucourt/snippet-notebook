@@ -13,3 +13,6 @@ frontend/build
 
 sync/turn/.unikraft
 sync/signaling/node_modules
+
+# Personal snippet notebooks (secrets / internal hostnames)
+personal-gitlab-runner-notebook.md
