@@ -163,12 +163,43 @@ export function codeBlockForPlaceholderClick(
   return null;
 }
 
-export function resolvedSnippet(document: string, block: CodeBlockAnchor): string {
+function varMapForBlock(
+  document: string,
+  block: CodeBlockAnchor,
+): Record<string, { value: string }> {
   const effective = effectiveVarsForBlock(document, block);
-  return substituteVariables(
-    block.content,
-    Object.fromEntries(Object.entries(effective).map(([k, v]) => [k, { value: v.value }])),
-  );
+  return Object.fromEntries(Object.entries(effective).map(([k, v]) => [k, { value: v.value }]));
+}
+
+/** Placeholder names in a snippet block that lack a resolved value at copy time. */
+export function unresolvedSnippetPlaceholders(
+  document: string,
+  block: CodeBlockAnchor,
+): string[] {
+  const names = extractVariableNames(block.content);
+  if (names.length === 0) return [];
+
+  const varMap = varMapForBlock(document, block);
+  const unresolved: string[] = [];
+  for (const name of names) {
+    const resolved = substituteVariables(`{{${name}}}`, varMap);
+    if (resolved === "" || /\{\{\w+\}\}/.test(resolved)) unresolved.push(name);
+  }
+  return unresolved;
+}
+
+export function resolvedSnippet(document: string, block: CodeBlockAnchor): string {
+  return substituteVariables(block.content, varMapForBlock(document, block));
+}
+
+export function prepareSnippetCopy(
+  document: string,
+  block: CodeBlockAnchor,
+): { text: string; unresolved: string[] } {
+  return {
+    text: resolvedSnippet(document, block),
+    unresolved: unresolvedSnippetPlaceholders(document, block),
+  };
 }
 
 export function previewPlaceholderValue(

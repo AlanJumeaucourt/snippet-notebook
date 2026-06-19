@@ -183,6 +183,10 @@
     min-width: 2.5ch;
   }
 
+  .cm-editor-host .cm-foldGutter .cm-gutterElement {
+    padding: 0 2px;
+  }
+
   .cm-snippet-copy-btn {
     padding: 3px 8px;
     font-size: 11px;

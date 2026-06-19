@@ -1,7 +1,104 @@
-import type { VarOption, VariableConfig } from "./types";
+import type { RegexTarget, VarOption, VariableConfig } from "./types";
 
 const FENCE_OPEN_RE = /^```([^\n`]+?)\s*$/;
 const VAR_LINE_RE = /^(\w+)\s*=\s*(.+)$/;
+const COLON_VAR_LINE_RE = /^(\w+)\s*:\s*(.+)$/;
+const REGEX_LITERAL_RE = /^\/((?:\\.|[^/])+)\/([gimsuy]*)$/;
+
+export function parseRegexLiteral(text: string): { pattern: string; flags: string } | null {
+  const match = text.trim().match(REGEX_LITERAL_RE);
+  if (!match) return null;
+  return { pattern: match[1], flags: match[2] ?? "" };
+}
+
+export function formatRegexLiteral(pattern: string, flags = ""): string {
+  return `/${pattern}/${flags}`;
+}
+
+export function parseRegexSelector(text: string): {
+  pattern: string;
+  flags: string;
+  target: RegexTarget;
+} | null {
+  const trimmed = text.trim();
+  const prefixMatch = trimmed.match(/^(name|n|value|v|both|b):(.+)$/i);
+  let target: RegexTarget = "both";
+  let literal = trimmed;
+  if (prefixMatch) {
+    const p = prefixMatch[1].toLowerCase();
+    target = p === "v" || p === "value" ? "value" : p === "b" || p === "both" ? "both" : "name";
+    literal = prefixMatch[2].trim();
+  }
+  const parsed = parseRegexLiteral(literal);
+  if (!parsed) return null;
+  return { ...parsed, target };
+}
+
+export function formatRegexSelector(
+  pattern: string,
+  flags = "",
+  target: RegexTarget = "both",
+): string {
+  const lit = formatRegexLiteral(pattern, flags);
+  if (target === "value") return `value:${lit}`;
+  if (target === "name") return `name:${lit}`;
+  return lit;
+}
+
+function globalMatchesRegex(re: RegExp, target: RegexTarget, name: string, val: string): boolean {
+  switch (target) {
+    case "name":
+      return re.test(name);
+    case "value":
+      return re.test(val);
+    case "both":
+      return re.test(name) || re.test(val);
+  }
+}
+
+/** Build picker options from globals matching `config.regex` on name, value, or both. */
+export function expandRegexVar(doc: string, config: VariableConfig): VariableConfig {
+  if (!config.regex) return config;
+
+  let re: RegExp;
+  try {
+    re = new RegExp(config.regex, config.regexFlags ?? "");
+  } catch {
+    return config;
+  }
+
+  const target = config.regexTarget ?? "both";
+  const globals = getGlobalVars(doc);
+  const options: VarOption[] = [];
+  for (const [name, globalCfg] of Object.entries(globals)) {
+    if (!globalMatchesRegex(re, target, name, globalCfg.value)) continue;
+    options.push({ label: name, value: globalCfg.value });
+  }
+  options.sort((a, b) => a.label.localeCompare(b.label));
+
+  const value = options.some((o) => o.value === config.value)
+    ? config.value
+    : (options[0]?.value ?? "");
+
+  return { ...config, value, options };
+}
+
+function materializeVarConfig(doc: string, config: VariableConfig): VariableConfig {
+  return config.regex ? expandRegexVar(doc, config) : config;
+}
+
+/** Regex picker options are computed from globals — only persist pattern + selection. */
+function storeRegexVar(config: VariableConfig): VariableConfig {
+  if (!config.regex) return config;
+  return {
+    value: config.value,
+    options: [],
+    regex: config.regex,
+    regexFlags: config.regexFlags,
+    regexTarget: config.regexTarget,
+    syntax: "equals",
+  };
+}
 
 export type VarsFenceAnchor = {
   scope: "global" | "local";
@@ -41,6 +138,10 @@ export function isVarsGlobal(lang: string): boolean {
 }
 
 export function formatVarLine(name: string, config: VariableConfig): string {
+  if (config.syntax === "colon" && !config.regex) {
+    return `${name}:${config.value || ""}`;
+  }
+
   const seen = new Set<string>();
   const options: VarOption[] = [];
   const add = (opt: VarOption) => {
@@ -54,6 +155,18 @@ export function formatVarLine(name: string, config: VariableConfig): string {
   if (current) add(current);
   else if (config.value) add({ label: config.value, value: config.value });
   for (const o of config.options) add(o);
+
+  if (config.regex) {
+    const pattern = formatRegexSelector(
+      config.regex,
+      config.regexFlags ?? "",
+      config.regexTarget ?? "both",
+    );
+    if (config.value) {
+      return `${name} = ${config.value} | ${pattern}`;
+    }
+    return `${name} = ${pattern}`;
+  }
 
   if (options.length <= 1) {
     return `${name} = ${config.value || options[0]?.value || ""}`;
@@ -69,23 +182,55 @@ export function formatVarLine(name: string, config: VariableConfig): string {
   return `${name} = ${config.value} | ${pipeOptions.map(formatOptionToken).join(", ")}`;
 }
 
-export function parseVarLine(line: string): { name: string; config: VariableConfig } | null {
-  const trimmed = line.trim();
-  if (!trimmed || trimmed.startsWith("#")) return null;
-  const match = trimmed.match(VAR_LINE_RE);
-  if (!match) return null;
+function regexConfigFromSelector(
+  selector: { pattern: string; flags: string; target: RegexTarget },
+  syntax: "colon" | "equals",
+): VariableConfig {
+  return {
+    value: "",
+    options: [],
+    regex: selector.pattern,
+    regexFlags: selector.flags || undefined,
+    regexTarget: selector.target,
+    syntax,
+  };
+}
 
-  const name = match[1];
-  const rest = match[2].trim();
+function parseVarAssignment(
+  name: string,
+  rest: string,
+  syntax: "colon" | "equals" = "equals",
+): { name: string; config: VariableConfig } {
   const pipeIdx = rest.indexOf("|");
+  const mainPart = pipeIdx >= 0 ? rest.slice(0, pipeIdx).trim() : rest.trim();
+  const regexSelector = parseRegexSelector(mainPart);
+
+  if (regexSelector) {
+    const config = regexConfigFromSelector(regexSelector, syntax);
+    return { name, config };
+  }
 
   if (pipeIdx >= 0) {
-    const value = rest.slice(0, pipeIdx).trim();
+    const value = mainPart;
     const tokens = rest
       .slice(pipeIdx + 1)
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean);
+
+    const regexToken = tokens.length > 0 ? parseRegexSelector(tokens[0]) : null;
+    if (regexToken) {
+      const base = regexConfigFromSelector(regexToken, syntax);
+      return {
+        name,
+        config: {
+          ...base,
+          value,
+          options: [],
+        },
+      };
+    }
+
     const parsed = tokens.map(parseOptionToken);
     const byValue = new Map<string, VarOption>();
     if (value) {
@@ -97,18 +242,36 @@ export function parseVarLine(line: string): { name: string; config: VariableConf
     const resolved = options.find((o) => o.value === value)?.value ?? options[0]?.value ?? value;
     return {
       name,
-      config: { value: resolved, options },
+      config: { value: resolved, options, syntax },
     };
   }
 
-  const single = rest;
+  const single = mainPart;
   return {
     name,
     config: {
       value: single,
       options: single ? [{ label: single, value: single }] : [],
+      syntax,
     },
   };
+}
+
+export function parseVarLine(line: string): { name: string; config: VariableConfig } | null {
+  const trimmed = line.trim();
+  if (!trimmed || trimmed.startsWith("#")) return null;
+
+  const equalsMatch = trimmed.match(VAR_LINE_RE);
+  if (equalsMatch) {
+    return parseVarAssignment(equalsMatch[1], equalsMatch[2].trim());
+  }
+
+  const colonMatch = trimmed.match(COLON_VAR_LINE_RE);
+  if (colonMatch) {
+    return parseVarAssignment(colonMatch[1], colonMatch[2].trim(), "colon");
+  }
+
+  return null;
 }
 
 export function parseVarsBlockContent(content: string): Record<string, VariableConfig> {
@@ -187,9 +350,10 @@ export function lookupVarInDocument(
 ): VariableConfig | undefined {
   if (blockStartLine != null) {
     const local = getLocalVarsForBlock(doc, blockStartLine)[name];
-    if (local) return local;
+    if (local) return materializeVarConfig(doc, local);
   }
-  return getGlobalVars(doc)[name];
+  const global = getGlobalVars(doc)[name];
+  return global ? materializeVarConfig(doc, global) : undefined;
 }
 
 export function getLocalVarsForBlock(
@@ -206,10 +370,13 @@ export function getEffectiveVarsForBlock(
   doc: string,
   blockStartLine: number,
 ): Record<string, VariableConfig> {
-  return {
+  const merged = {
     ...getGlobalVars(doc),
     ...getLocalVarsForBlock(doc, blockStartLine),
   };
+  return Object.fromEntries(
+    Object.entries(merged).map(([name, cfg]) => [name, materializeVarConfig(doc, cfg)]),
+  );
 }
 
 function replaceFenceBody(
@@ -251,7 +418,8 @@ export function setVarInDocument(
 
   if (fence) {
     const vars = { ...fence.vars, [name]: config };
-    return replaceFenceBody(lines, fence, vars).join("\n");
+    const stored = Object.fromEntries(Object.entries(vars).map(([n, c]) => [n, storeRegexVar(c)]));
+    return replaceFenceBody(lines, fence, stored).join("\n");
   }
 
   if (scope === "global") {
@@ -274,16 +442,22 @@ export function updateVarValue(
   value: string,
   blockStartLine?: number,
 ): string {
-  const current =
+  const raw =
     scope === "global"
       ? getGlobalVars(doc)[name]
       : blockStartLine != null
-        ? (getLocalVarsForBlock(doc, blockStartLine)[name] ?? getGlobalVars(doc)[name])
+        ? getLocalVarsForBlock(doc, blockStartLine)[name]
         : undefined;
 
-  const config: VariableConfig = current
-    ? { ...current, value }
-    : { value, options: [{ label: value, value }] };
+  const fallback = blockStartLine != null ? getGlobalVars(doc)[name] : undefined;
+
+  const current = raw ?? fallback;
+
+  const config: VariableConfig = current?.regex
+    ? storeRegexVar({ ...current, value })
+    : current
+      ? { ...current, value }
+      : { value, options: [{ label: value, value }], syntax: "equals" };
 
   if (scope === "local" && blockStartLine != null) {
     const local = getLocalVarsForBlock(doc, blockStartLine);
@@ -361,11 +535,21 @@ export function redactVariableConfig(config: VariableConfig): VariableConfig {
       label: o.label === o.value && !isVarReference(o.value) ? "…" : o.label,
       value: redact(o.value),
     })),
+    regex: config.regex,
+    regexFlags: config.regexFlags,
+    regexTarget: config.regexTarget,
+    syntax: config.syntax,
   };
 }
 
 function formatRedactedVarLine(name: string, config: VariableConfig): string {
   const redacted = redactVariableConfig(config);
+  if (redacted.regex) {
+    return formatVarLine(name, redacted);
+  }
+  if (redacted.syntax === "colon") {
+    return `${name}:${redacted.value}`;
+  }
   const pipeOptions = redacted.options.filter(
     (o) => !(o.label === "…" && o.value === redacted.value),
   );

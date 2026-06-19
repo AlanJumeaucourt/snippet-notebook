@@ -36,6 +36,7 @@ Open [http://localhost:3000](http://localhost:3000).
 - **Link to a section** — Standard markdown `[label](#anchor-id)`. The anchor id is the heading text slugified (lowercase, no punctuation, spaces → hyphens; duplicate titles get `-1`, `-2`, …). **Ctrl+click** or **Cmd+click** the link to jump (same ids as the sidebar outline).
 - **New section** — `Ctrl+N` or “+ Section” at the bottom of the sidebar.
 - **Find** — `Ctrl+F` / `Cmd+F`: overlay search bar, match highlights, `3 / 12` counter, ▲/▼ (Shift+Enter / Enter).
+- **Fold** — click **▸** in the gutter to collapse a heading section or fenced code/`vars` block; **Ctrl/Cmd+Shift+[** fold, **Ctrl/Cmd+Shift+]** unfold at cursor.
 - Data is stored in `localStorage` under `snippet-notebook`.
 - **Sync (optional)** — sidebar **Sync**: same room name + passphrase on each device; realtime P2P edit via WebRTC (no notebook stored on a sync server). Configure signaling/TURN in `.env.local` — see `frontend/.env.example` and [`sync/README.md`](../sync/README.md).
 
@@ -51,10 +52,10 @@ vp build
 
 Build emits a static site in `.output/public/` (including `index.html`).
 
-| Setting | Value |
-|--------|--------|
-| Root Directory | `frontend` |
-| Build Command | `bun install && bun run build` |
-| Publish Directory | `.output/public` |
+| Setting           | Value                          |
+| ----------------- | ------------------------------ |
+| Root Directory    | `frontend`                     |
+| Build Command     | `bun install && bun run build` |
+| Publish Directory | `.output/public`               |
 
 Do **not** publish `.output/server/` — that folder is only used during the build.

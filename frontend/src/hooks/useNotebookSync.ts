@@ -11,10 +11,7 @@ import {
 
 export type SyncStatus = "off" | "connecting" | "on";
 
-export function useNotebookSync(
-  getLocalDocument: () => string,
-  options?: { enabled?: boolean },
-) {
+export function useNotebookSync(getLocalDocument: () => string, options?: { enabled?: boolean }) {
   const enabled = options?.enabled !== false;
   const sessionRef = React.useRef<NotebookSyncSession | null>(null);
   const [status, setStatus] = React.useState<SyncStatus>("off");

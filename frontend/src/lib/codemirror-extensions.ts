@@ -1,27 +1,29 @@
-import { markdown } from "@codemirror/lang-markdown";
-import { fencedCodeLanguages } from "./codemirror-languages";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
+import { markdown } from "@codemirror/lang-markdown";
+import { foldGutter, foldKeymap } from "@codemirror/language";
 import { getSearchQuery, search, setSearchQuery } from "@codemirror/search";
 import { RangeSetBuilder } from "@codemirror/state";
+import {
+    Decoration,
+    DecorationSet,
+    EditorView,
+    ViewPlugin,
+    type ViewUpdate,
+    highlightActiveLine,
+    highlightActiveLineGutter,
+    keymap,
+    lineNumbers,
+} from "@codemirror/view";
 import { scheduleDecorationRebuild } from "~/lib/codemirror-schedule";
 import { scrollToSearchMatchIfNeeded } from "~/lib/editor";
-import { keymap } from "@codemirror/view";
-import {
-  Decoration,
-  DecorationSet,
-  EditorView,
-  ViewPlugin,
-  type ViewUpdate,
-  lineNumbers,
-  highlightActiveLine,
-  highlightActiveLineGutter,
-} from "@codemirror/view";
-import { internalLinkTargetAt } from "./document";
+import { fencedCodeLanguages } from "./codemirror-languages";
 import { notebookSyntax, notebookTheme } from "./codemirror-theme";
+import { internalLinkTargetAt } from "./document";
 
 const INTERNAL_LINK_RE = /\[([^\]]*)\]\(#([^)]+)\)/g;
 const VARS_FENCE = /^```vars(\s+global)?\s*$/;
 const VAR_ASSIGN = /^(\w+)\s*=\s*(.+)$/;
+const VAR_COLON = /^(\w+)\s*:\s*(.+)$/;
 
 function buildDecorations(view: EditorView): DecorationSet {
   const marks: ReturnType<Decoration["range"]>[] = [];
@@ -46,10 +48,15 @@ function buildDecorations(view: EditorView): DecorationSet {
     }
 
     if (inVarsBlock) {
-      const assign = line.trim().match(VAR_ASSIGN);
-      if (assign && !line.trim().startsWith("#")) {
-        const name = assign[1];
-        const rest = assign[2];
+      const trimmed = line.trim();
+      if (trimmed.startsWith("#")) continue;
+
+      const assign = trimmed.match(VAR_ASSIGN);
+      const colon = !assign ? trimmed.match(VAR_COLON) : null;
+      const match = assign ?? colon;
+      if (match) {
+        const name = match[1];
+        const rest = match[2];
         const pipeIdx = rest.indexOf("|");
         const nameStart = line.indexOf(name);
         if (nameStart >= 0) {
@@ -96,7 +103,8 @@ function buildDecorations(view: EditorView): DecorationSet {
             }
           }
         } else {
-          const valStart = line.indexOf("=", nameStart);
+          const sep = colon ? ":" : "=";
+          const valStart = line.indexOf(sep, nameStart);
           if (valStart >= 0) {
             const valueStart = line.indexOf(rest.trim(), valStart);
             if (valueStart >= 0 && rest.trim() && !rest.includes("{{")) {
@@ -219,6 +227,10 @@ const highlightPlugin = ViewPlugin.fromClass(
 export function notebookExtensions() {
   return [
     lineNumbers(),
+    foldGutter({
+      openText: "▾",
+      closedText: "▸",
+    }),
     highlightActiveLineGutter(),
     highlightActiveLine(),
     history(),
@@ -228,7 +240,7 @@ export function notebookExtensions() {
     highlightPlugin,
     search({ scrollToMatch: scrollToSearchMatchIfNeeded }),
     findHighlightPlugin,
-    keymap.of([...historyKeymap, ...defaultKeymap]),
+    keymap.of([...historyKeymap, ...defaultKeymap, ...foldKeymap]),
     EditorView.lineWrapping,
   ];
 }

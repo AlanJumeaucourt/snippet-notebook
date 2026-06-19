@@ -2,7 +2,11 @@ import * as React from "react";
 import type { CodeBlockAnchor } from "~/lib/document";
 import { extractVariableNames } from "~/lib/variables";
 import { copyTextToClipboard } from "~/lib/clipboard";
-import { resolvedSnippet } from "~/lib/snippet-vars";
+import {
+  formatUnresolvedCopyMessage,
+  showUnresolvedCopyNotice,
+} from "~/lib/snippet-copy-click";
+import { prepareSnippetCopy } from "~/lib/snippet-vars";
 
 /** Expanded resolved preview (Ctrl/Cmd+click snippet). Inline **→ copy** is on each fence. */
 export function SnippetBar({
@@ -17,16 +21,22 @@ export function SnippetBar({
   onClose: () => void;
 }) {
   const [copied, setCopied] = React.useState(false);
+  const [copiedWithWarning, setCopiedWithWarning] = React.useState(false);
   const names = extractVariableNames(block.content);
   if (names.length === 0) return null;
 
-  const resolved = resolvedSnippet(document, block);
+  const { text: resolved, unresolved } = prepareSnippetCopy(document, block);
 
   const copy = () => {
     copyTextToClipboard(resolved, (ok) => {
       if (!ok) return;
+      if (unresolved.length) showUnresolvedCopyNotice(unresolved);
+      setCopiedWithWarning(unresolved.length > 0);
       setCopied(true);
-      window.setTimeout(() => setCopied(false), 1000);
+      window.setTimeout(() => {
+        setCopied(false);
+        setCopiedWithWarning(false);
+      }, 1000);
     });
   };
 
@@ -50,15 +60,21 @@ export function SnippetBar({
         </span>
         <button
           type="button"
-          onClick={() => void copy()}
+          onClick={() => copy()}
           className={`shrink-0 text-xs px-2.5 py-0.5 rounded font-medium transition-colors ${
             copied
-              ? "bg-(--green)/20 text-(--green)"
+              ? copiedWithWarning
+                ? "bg-(--danger)/15 text-(--danger)"
+                : "bg-(--green)/20 text-(--green)"
               : "bg-(--accent-soft)/15 text-(--accent-soft) hover:bg-(--hover)"
           }`}
-          title="Copy with variables resolved (Ctrl+Shift+C)"
+          title={
+            copied && copiedWithWarning
+              ? formatUnresolvedCopyMessage(unresolved)
+              : "Copy with variables resolved (Ctrl+Shift+C)"
+          }
         >
-          {copied ? "✓ Copied" : "Copy"}
+          {copied ? (copiedWithWarning ? "✓ Copied (unset vars)" : "✓ Copied") : "Copy"}
         </button>
         <span className="flex-1" />
         <button
@@ -72,7 +88,11 @@ export function SnippetBar({
         </button>
       </div>
       <p className="shrink-0 px-2.5 pt-1 text-[10px] text-(--text-muted)">
-        Select text below or use Copy · Ctrl+Shift+C
+        {unresolved.length > 0 ? (
+          <span className="text-(--danger)">{formatUnresolvedCopyMessage(unresolved)}</span>
+        ) : (
+          "Select text below or use Copy · Ctrl+Shift+C"
+        )}
       </p>
       <pre className="flex-1 min-h-0 overflow-y-auto px-2.5 pb-2 text-[11px] font-mono text-(--green)/90 whitespace-pre-wrap break-all leading-relaxed select-text cursor-text">
         {resolved}

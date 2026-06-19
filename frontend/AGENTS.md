@@ -17,20 +17,20 @@ Use `vp` for package management (see Vite+ section below). Do not commit secrets
 
 ## Architecture
 
-| Area                           | Path                                                                         |
-| ------------------------------ | ---------------------------------------------------------------------------- |
-| Shell UI                       | `src/components/SnippetNotebook.tsx`                                         |
-| Editor + popover + snippet bar | `src/components/DocumentEditor.tsx`                                          |
-| Variable picker / popover      | `src/components/VariablePicker.tsx`, `VariablePopover.tsx`                   |
-| Default notebook               | `src/lib/default-document.md` → `defaults.ts`                                |
-| Var parse/write                | `src/lib/vars-markdown.ts`                                                   |
-| Placeholder click + preview    | `src/lib/snippet-vars.ts`, `codemirror-variables.ts`, `placeholder-click.ts` |
-| Editor sync + undo             | `src/lib/editor.ts` (`applyDocumentPreservingView`, `recordHistory`)         |
-| CM theme + fences              | `src/lib/codemirror-theme.ts`, `codemirror-extensions.ts`                    |
-| Fenced code highlight          | `src/lib/codemirror-languages.ts` (`@codemirror/language-data`)              |
-| Persistence                    | `src/lib/storage.ts` — key `snippet-notebook`, `{ document: string }` only   |
+| Area                           | Path                                                                                                 |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| Shell UI                       | `src/components/SnippetNotebook.tsx`                                                                 |
+| Editor + popover + snippet bar | `src/components/DocumentEditor.tsx`                                                                  |
+| Variable picker / popover      | `src/components/VariablePicker.tsx`, `VariablePopover.tsx`                                           |
+| Default notebook               | `src/lib/default-document.md` → `defaults.ts`                                                        |
+| Var parse/write                | `src/lib/vars-markdown.ts`                                                                           |
+| Placeholder click + preview    | `src/lib/snippet-vars.ts`, `codemirror-variables.ts`, `placeholder-click.ts`                         |
+| Editor sync + undo             | `src/lib/editor.ts` (`applyDocumentPreservingView`, `recordHistory`)                                 |
+| CM theme + fences              | `src/lib/codemirror-theme.ts`, `codemirror-extensions.ts`                                            |
+| Fenced code highlight          | `src/lib/codemirror-languages.ts` (`@codemirror/language-data`)                                      |
+| Persistence                    | `src/lib/storage.ts` — key `snippet-notebook`, `{ document: string }` only                           |
 | P2P sync                       | `src/lib/sync/*`, `src/hooks/useNotebookSync.ts`, `SyncPanel.tsx` — Yjs/WebRTC; see `sync/README.md` |
-| Hook                           | `src/hooks/useNotebook.ts`                                                   |
+| Hook                           | `src/hooks/useNotebook.ts`                                                                           |
 
 **No bottom variables panel.** All var UX is inline: click `{{name}}`, snippet bar when cursor is in a code block with placeholders.
 
@@ -55,6 +55,8 @@ ssh {{user_id}}@host#{{target_host}}@jump.example.com
 - **Global** — ` ```vars global ` (or `vars global` tag)
 - **Local** — ` ```vars ` immediately before the snippet code fence; tied via `extractVarsFences` → `blockStartLine`
 - **Line syntax** — `name = selectedValue | opt1, opt2`
+  - **Colon globals** — `NAME:value` (no `=`) for compact inventories (e.g. `KENTIKA_INT_RUNNER_IP:10.0.0.11`)
+  - **Regex picker** — `name = /pattern/` (name or value, default), `name = name:/pattern/`, or `name = value:/pattern/`; click `{{name}}` to pick; the global’s **value** is copied; options are computed from globals at resolve time — on save only `selected | pattern` is written, not the full option list (`storeRegexVar` in `vars-markdown.ts`)
   - Use `LABEL:value` only when the picker needs a friendly name (DEV, PROD)
   - Plain values: do not duplicate as `value | value` — `formatVarLine` in `vars-markdown.ts` omits unlabeled repeats after `|`
 - **Placeholders** — `{{name}}` in code or vars blocks only (not prose)
@@ -90,6 +92,8 @@ ssh {{user_id}}@host#{{target_host}}@jump.example.com
 | New section | Ctrl/Cmd+N |
 | Copy snippet | **Copy** button on each ` ```lang ` fence; Ctrl/Cmd+Shift+C in block |
 | Copy notebook for sharing | Sidebar **Copy for sharing** — full markdown, `{{placeholders}}` kept, `vars` values cleared (`documentForSharing`) |
+| Fold section / code block | Click **▸** in gutter, or **Ctrl/Cmd+Shift+[** fold / **Ctrl/Cmd+Shift+]** unfold; **Ctrl/Cmd+Alt+[** / **Ctrl/Cmd+Alt+]** fold/unfold all |
+| Unfold folded range | Click **…** placeholder or **▾** in gutter |
 
 ## Product decisions (do not regress)
 
@@ -127,7 +131,7 @@ If you implement a fix for owner feedback and the rule is not already listed her
 - **Green `→ value (LABEL)`** preview after placeholders shows what copy will use; preview is clickable too.
 - **Copy snippet** — every fenced code block (` ```lang `, any language) shows a small inline **Copy** button on the opening fence line; click copies the block (`{{…}}` resolved when present). **Ctrl/Cmd+Shift+C** when the cursor is in that block (`codemirror-variables.ts`, `snippet-copy-click.ts`). Clipboard must run synchronously from the click handler (`copyTextToClipboard` in `clipboard.ts`); use `click` on the widget, not `await` before `writeText` (mobile WebKit).
 - **Resolved snippet preview** — optional; opens on **Ctrl/Cmd+click** on a `{{placeholder}}`, green preview, or anywhere in a snippet code block (not on cursor enter). Plain click on placeholder → variable popover only. Preview text is **selectable** (`user-select: text`). **Escape** or **×** closes preview (`SnippetBar.tsx`, `resolvedPreviewClickExtension`).
-- **Multi-option vars** — picker must work on click; adding a value must not produce `value | value` when label equals value (`formatVarLine`).
+- **Multi-option vars** — picker must work on click; adding a value must not produce `value | value` when label equals value (`formatVarLine`); **4+ options** show a fuzzy search field in `VariablePopover` (filters label and value).
 - **Plain add** — user enters one token only; use `LABEL:value` in the add field only when a friendly picker label is needed.
 - **Global placeholders** — same visual treatment for all globals (e.g. `MY_TGI` and `MY_AGI` must not look like different “kinds” because of shell `$` highlighting — `PLACEHOLDER_MARK_STYLE` + CSS `!important`).
 - **Placeholders only in fences** — not in markdown prose / instruction lines in defaults.
@@ -157,6 +161,13 @@ Files: `DocumentEditor.tsx`, `find-stats.ts`, `editor.ts` (`FIND_BAR_*`, `findBa
 - **`default-document.md`** — generic placeholders only (`example.com`, `your-token-here`); **no real credentials**, emails, tokens, or internal hostnames in repo defaults.
 - First-run doc should **demonstrate features** (global vars, local vars, multi-option `|`, bash/powershell fences) without leaking secrets.
 - In TS template strings for default markdown, escape `$` before `{{` (e.g. `` \${{machine}} ``) so bundlers do not treat `{{` as interpolation.
+
+### Editor folding
+
+- **IDE-style fold** — collapse markdown sections (from `#` … `######` until the next heading of equal or higher level) and fenced code/`vars` blocks so long notebooks scroll less (`foldGutter` + markdown `headerIndent` in `codemirror-extensions.ts`).
+- **Gutter chevrons** — **▸** / **▾** between line numbers and content; folded body shows a clickable **…** placeholder (dark theme in `codemirror-theme.ts`).
+- **Keyboard** — **Ctrl/Cmd+Shift+[** fold at cursor, **Ctrl/Cmd+Shift+]** unfold; **Ctrl/Cmd+Alt+[** / **Ctrl/Cmd+Alt+]** fold/unfold all (`foldKeymap`).
+- **Fold state is session-only** — not stored in markdown or `localStorage` (resets on reload).
 
 ### Syntax highlighting
 

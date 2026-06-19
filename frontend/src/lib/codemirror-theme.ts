@@ -132,6 +132,26 @@ export const notebookTheme = EditorView.theme(
     ".cm-searchMatch .cm-selectionMatch": {
       backgroundColor: `${palette.selection} !important`,
     },
+    ".cm-foldGutter": {
+      width: "12px",
+    },
+    ".cm-foldGutter span": {
+      color: palette.muted,
+      fontSize: "11px",
+      lineHeight: "1",
+    },
+    ".cm-foldGutter span:hover": {
+      color: palette.text,
+    },
+    ".cm-foldPlaceholder": {
+      backgroundColor: palette.gutter,
+      border: `1px solid ${palette.border}`,
+      color: palette.muted,
+      borderRadius: "3px",
+      margin: "0 2px",
+      padding: "0 4px",
+      cursor: "pointer",
+    },
   },
   { dark: true },
 );

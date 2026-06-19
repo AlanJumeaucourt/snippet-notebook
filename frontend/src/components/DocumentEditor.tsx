@@ -1,10 +1,15 @@
-import * as React from "react";
 import { redo, undo } from "@codemirror/commands";
+import { SearchQuery, findNext, findPrevious, setSearchQuery } from "@codemirror/search";
 import { EditorState, Transaction } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
-import { SearchQuery, findNext, findPrevious, setSearchQuery } from "@codemirror/search";
+import * as React from "react";
+import { yCollab } from "y-codemirror.next";
+import { SnippetBar } from "~/components/SnippetBar";
+import { VariablePopover } from "~/components/VariablePopover";
+import { copyTextToClipboard } from "~/lib/clipboard";
+import { internalLinkClickExtension, notebookExtensions } from "~/lib/codemirror-extensions";
+import { resolvedPreviewClickExtension, variableInlineExtension } from "~/lib/codemirror-variables";
 import { debounce } from "~/lib/debounce";
-import { computeFindMatchStats } from "~/lib/find-stats";
 import {
   activeHeadingForLine,
   extractHeadingAnchors,
@@ -14,12 +19,6 @@ import {
   type CodeBlockAnchor,
   type HeadingAnchor,
 } from "~/lib/document";
-import { internalLinkClickExtension, notebookExtensions } from "~/lib/codemirror-extensions";
-import { resolvedPreviewClickExtension, variableInlineExtension } from "~/lib/codemirror-variables";
-import { setPlaceholderClickHandler } from "~/lib/placeholder-click";
-import { setSnippetCopyHandler, showSnippetCopyFeedback } from "~/lib/snippet-copy-click";
-import { VariablePopover } from "~/components/VariablePopover";
-import { SnippetBar } from "~/components/SnippetBar";
 import {
   FIND_BAR_CONTENT_PAD,
   applyDocumentPreservingView,
@@ -31,18 +30,23 @@ import {
   placeholderScreenAnchor,
   scrollToLineInView,
 } from "~/lib/editor";
-import { extractVariableNames } from "~/lib/variables";
+import { computeFindMatchStats } from "~/lib/find-stats";
+import { setPlaceholderClickHandler } from "~/lib/placeholder-click";
+import {
+  setSnippetCopyHandler,
+  showSnippetCopyFeedback,
+  showUnresolvedCopyNotice,
+} from "~/lib/snippet-copy-click";
 import {
   codeBlockForPlaceholderClick,
   findPlaceholderAt,
   listInlinePlaceholders,
-  resolvedSnippet,
+  prepareSnippetCopy,
 } from "~/lib/snippet-vars";
-import { copyTextToClipboard } from "~/lib/clipboard";
 import type { NotebookCollab } from "~/lib/sync/session";
 import { applyYTextDocument } from "~/lib/sync/ytext-document";
+import { extractVariableNames } from "~/lib/variables";
 import { addVarOption, updateVarValue } from "~/lib/vars-markdown";
-import { yCollab } from "y-codemirror.next";
 
 function applyFindQuery(view: EditorView, text: string) {
   view.dispatch({
@@ -297,10 +301,16 @@ export function DocumentEditor({
     refreshFindStats(view);
   }, [refreshFindStats]);
 
-  const copyBlock = React.useCallback((block: CodeBlockAnchor, onDone?: (ok: boolean) => void) => {
-    const text = resolvedSnippet(valueRef.current, block);
-    copyTextToClipboard(text, onDone);
-  }, []);
+  const copyBlock = React.useCallback(
+    (block: CodeBlockAnchor, onDone?: (ok: boolean, unresolved?: string[]) => void) => {
+      const { text, unresolved } = prepareSnippetCopy(valueRef.current, block);
+      copyTextToClipboard(text, (ok) => {
+        if (ok && unresolved.length) showUnresolvedCopyNotice(unresolved);
+        onDone?.(ok, unresolved);
+      });
+    },
+    [],
+  );
 
   const openResolvedPreview = React.useCallback((block: CodeBlockAnchor) => {
     if (extractVariableNames(block.content).length === 0) return;
@@ -315,7 +325,7 @@ export function DocumentEditor({
     setSnippetCopyHandler((fenceStartLine) => {
       const block = findCodeBlockByFenceLine(valueRef.current, fenceStartLine);
       if (!block) return null;
-      return resolvedSnippet(valueRef.current, block);
+      return prepareSnippetCopy(valueRef.current, block);
     });
     return () => setSnippetCopyHandler(null);
   }, []);
@@ -465,8 +475,8 @@ export function DocumentEditor({
         const block = resolvedPreviewBlock ?? activeBlock;
         if (!block) return;
         e.preventDefault();
-        copyBlock(block, (ok) => {
-          if (ok) showSnippetCopyFeedback(undefined, block.startLine);
+        copyBlock(block, (ok, unresolved) => {
+          if (ok) showSnippetCopyFeedback(undefined, block.startLine, unresolved);
         });
       }
     };

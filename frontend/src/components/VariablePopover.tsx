@@ -1,9 +1,93 @@
 import * as React from "react";
 import { AddOptionField } from "~/components/AddOptionField";
 import { VariablePicker } from "~/components/VariablePicker";
+import { fuzzyFilterOptions } from "~/lib/fuzzy-match";
 import { hasMultipleChoices, previewPlaceholderValue, varPickerScope } from "~/lib/snippet-vars";
+import type { VariableConfig, VarOption } from "~/lib/types";
 import { lookupVarInDocument } from "~/lib/vars-markdown";
-import type { VariableConfig } from "~/lib/types";
+
+function VariableOptionList({
+  name,
+  options,
+  value,
+  onSelect,
+  onAdd,
+}: {
+  name: string;
+  options: VarOption[];
+  value: string;
+  onSelect: (value: string) => void;
+  onAdd: (option: string) => void;
+}) {
+  const searchRef = React.useRef<HTMLInputElement>(null);
+  const [query, setQuery] = React.useState("");
+  const filtered = React.useMemo(() => fuzzyFilterOptions(options, query), [options, query]);
+
+  React.useEffect(() => {
+    searchRef.current?.focus();
+  }, []);
+
+  return (
+    <div className="space-y-1">
+      <p className="text-[10px] text-(--text-muted) mb-2">
+        Pick one — the <strong>value</strong> (e.g. IP) is copied into the snippet, not the label.
+      </p>
+      {options.length >= 4 ? (
+        <input
+          ref={searchRef}
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => e.stopPropagation()}
+          placeholder="Search…"
+          aria-label={`Search ${name} options`}
+          className="w-full mb-2 bg-(--input-bg) border border-(--border) rounded-md px-2.5 py-1.5 text-[11px] font-mono outline-none focus:border-(--accent-soft) focus:ring-1 focus:ring-(--glow) placeholder:text-(--text-muted)"
+        />
+      ) : null}
+      <ul
+        className="space-y-1 max-h-52 overflow-y-auto overscroll-contain"
+        role="listbox"
+        aria-label={`${name} options`}
+      >
+        {filtered.map((opt) => {
+          const selected = value === opt.value;
+          return (
+            <li key={`${opt.label}:${opt.value}`}>
+              <button
+                type="button"
+                role="option"
+                aria-selected={selected}
+                onClick={() => onSelect(opt.value)}
+                className={`w-full text-left px-2.5 py-2 rounded-md border transition-colors ${
+                  selected
+                    ? "border-(--accent-soft) bg-(--selection) text-(--text-bright)"
+                    : "border-transparent hover:bg-(--hover) text-(--text)"
+                }`}
+              >
+                {opt.label === opt.value ? (
+                  <span className="font-mono text-[11px]">{opt.value}</span>
+                ) : (
+                  <>
+                    <span className="font-semibold text-(--cyan)">{opt.label}</span>
+                    <span className="ml-2 font-mono text-[10px] text-(--text-muted)">
+                      {opt.value}
+                    </span>
+                  </>
+                )}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      {filtered.length === 0 ? (
+        <p className="text-[10px] text-(--text-muted) px-1 py-2">
+          No matches for “{query.trim()}”.
+        </p>
+      ) : null}
+      <AddOptionField onAdd={onAdd} />
+    </div>
+  );
+}
 
 export function VariablePopover({
   document,
@@ -95,44 +179,13 @@ export function VariablePopover({
       </div>
 
       {multi ? (
-        <div className="space-y-1">
-          <p className="text-[10px] text-(--text-muted) mb-2">
-            Pick one — the <strong>value</strong> (e.g. IP) is copied into the snippet, not the
-            label.
-          </p>
-          <ul className="space-y-1" role="listbox" aria-label={`${name} options`}>
-            {config.options.map((opt) => {
-              const selected = config.value === opt.value;
-              return (
-                <li key={`${opt.label}:${opt.value}`}>
-                  <button
-                    type="button"
-                    role="option"
-                    aria-selected={selected}
-                    onClick={() => setValue(opt.value)}
-                    className={`w-full text-left px-2.5 py-2 rounded-md border transition-colors ${
-                      selected
-                        ? "border-(--accent-soft) bg-(--selection) text-(--text-bright)"
-                        : "border-transparent hover:bg-(--hover) text-(--text)"
-                    }`}
-                  >
-                    {opt.label === opt.value ? (
-                      <span className="font-mono text-[11px]">{opt.value}</span>
-                    ) : (
-                      <>
-                        <span className="font-semibold text-(--cyan)">{opt.label}</span>
-                        <span className="ml-2 font-mono text-[10px] text-(--text-muted)">
-                          {opt.value}
-                        </span>
-                      </>
-                    )}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-          <AddOptionField onAdd={addOption} />
-        </div>
+        <VariableOptionList
+          name={name}
+          options={config.options}
+          value={config.value}
+          onSelect={setValue}
+          onAdd={addOption}
+        />
       ) : (
         <VariablePicker
           name={name}

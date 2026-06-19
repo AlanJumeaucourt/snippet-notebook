@@ -13,11 +13,7 @@ export function MobileSyncBadge({ sync }: { sync: SyncApi }) {
       className={`text-[10px] font-medium ${live ? "text-(--green)" : "text-(--cyan)"}`}
       title={sync.roomId}
     >
-      {sync.status === "connecting"
-        ? "Sync…"
-        : live
-          ? `Live (${sync.peerCount})`
-          : "Waiting…"}
+      {sync.status === "connecting" ? "Sync…" : live ? `Live (${sync.peerCount})` : "Waiting…"}
     </span>
   );
 }
@@ -82,8 +78,8 @@ export function SyncPanel({ sync }: { sync: SyncApi }) {
       {open && (
         <div className="px-2 pb-2 space-y-2">
           <p className="text-[10px] text-(--text-muted) leading-snug">
-            Peer-to-peer via WebRTC. Your notebook is not stored on a sync server — only
-            signaling and optional TURN on your infra.
+            Peer-to-peer via WebRTC. Your notebook is not stored on a sync server — only signaling
+            and optional TURN on your infra.
           </p>
 
           {sync.error && (

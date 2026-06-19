@@ -14,9 +14,7 @@ function splitUrls(raw: string | undefined): string[] {
 /** Client sync settings from Vite env (see frontend/.env.example). */
 export function getSyncConfig(): SyncConfig {
   const signaling = splitUrls(import.meta.env.VITE_SYNC_SIGNALING_URLS);
-  const stunUrls = splitUrls(
-    import.meta.env.VITE_SYNC_STUN_URLS ?? "stun:stun.l.google.com:19302",
-  );
+  const stunUrls = splitUrls(import.meta.env.VITE_SYNC_STUN_URLS ?? "stun:stun.l.google.com:19302");
   const turnUrls = splitUrls(import.meta.env.VITE_SYNC_TURN_URLS);
   const turnUser = import.meta.env.VITE_SYNC_TURN_USERNAME?.trim() ?? "";
   const turnCred = import.meta.env.VITE_SYNC_TURN_CREDENTIAL?.trim() ?? "";
