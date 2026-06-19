@@ -5,7 +5,7 @@ One markdown file for notes and command snippets. Define values in `vars` fences
 - **Sidebar** — heading outline follows scroll; click to jump
 - **Fold** — click **▸** in the gutter to collapse a section or code block; **Ctrl/Cmd+Shift+[** / **]** to fold/unfold at cursor
 - **Variables** — click a purple placeholder in a code or `vars` block to pick a value; green `→ value (LABEL)` shows what **Copy** will use
-- **Copy snippet** — **Copy** on each ` ```lang ` fence (**Ctrl/Cmd+Shift+C** in block); **Ctrl/Cmd+click** opens an optional resolved preview
+- **Copy snippet** — **Copy** on each ` ```lang ` fence (**Ctrl/Cmd+Shift+C** in block); warns when variables are unset; **Ctrl/Cmd+click** opens an optional resolved preview
 - **Copy for sharing** — sidebar button keeps `{{placeholders}}` but clears `vars` values (safe to paste)
 - **Find** — **Ctrl/Cmd+F** with match counter and ▲/▼ navigation
 - **New section** — **Ctrl/Cmd+N** or **+ Section** in the sidebar

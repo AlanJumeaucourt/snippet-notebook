@@ -37,6 +37,6 @@ test("unresolvedSnippetPlaceholders flags empty and undefined vars", () => {
 test("prepareSnippetCopy still returns resolved text with unset placeholders", () => {
   const both = blockAtFence(DOC.split("\n").indexOf("```bash"));
   const { text, unresolved } = prepareSnippetCopy(DOC, both);
-  expect(text).toBe("ssh alice@");
+  expect(text).toBe("ssh alice@{{target_host}}");
   expect(unresolved).toEqual(["target_host"]);
 });

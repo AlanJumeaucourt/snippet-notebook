@@ -129,7 +129,7 @@ If you implement a fix for owner feedback and the rule is not already listed her
 - **No bottom variables panel** — removed on purpose; all var UX is inline in the editor.
 - **Click `{{name}}`** in code or `vars` fences → `VariablePopover` (multi-choice list + add field).
 - **Green `→ value (LABEL)`** preview after placeholders shows what copy will use; preview is clickable too.
-- **Copy snippet** — every fenced code block (` ```lang `, any language) shows a small inline **Copy** button on the opening fence line; click copies the block (`{{…}}` resolved when present). **Ctrl/Cmd+Shift+C** when the cursor is in that block (`codemirror-variables.ts`, `snippet-copy-click.ts`). Clipboard must run synchronously from the click handler (`copyTextToClipboard` in `clipboard.ts`); use `click` on the widget, not `await` before `writeText` (mobile WebKit).
+- **Copy snippet** — every fenced code block (` ```lang `, any language) shows a small inline **Copy** button on the opening fence line; click copies the block (`{{…}}` resolved when present). **Warns** (toast + amber **Copy** button) when any placeholder has no value — copy still proceeds. **Ctrl/Cmd+Shift+C** when the cursor is in that block (`codemirror-variables.ts`, `snippet-copy-click.ts`). Clipboard must run synchronously from the click handler (`copyTextToClipboard` in `clipboard.ts`); use `click` on the widget, not `await` before `writeText` (mobile WebKit).
 - **Resolved snippet preview** — optional; opens on **Ctrl/Cmd+click** on a `{{placeholder}}`, green preview, or anywhere in a snippet code block (not on cursor enter). Plain click on placeholder → variable popover only. Preview text is **selectable** (`user-select: text`). **Escape** or **×** closes preview (`SnippetBar.tsx`, `resolvedPreviewClickExtension`).
 - **Multi-option vars** — picker must work on click; adding a value must not produce `value | value` when label equals value (`formatVarLine`); **4+ options** show a fuzzy search field in `VariablePopover` (filters label and value).
 - **Plain add** — user enters one token only; use `LABEL:value` in the add field only when a friendly picker label is needed.
@@ -167,7 +167,8 @@ Files: `DocumentEditor.tsx`, `find-stats.ts`, `editor.ts` (`FIND_BAR_*`, `findBa
 - **IDE-style fold** — collapse markdown sections (from `#` … `######` until the next heading of equal or higher level) and fenced code/`vars` blocks so long notebooks scroll less (`foldGutter` + markdown `headerIndent` in `codemirror-extensions.ts`).
 - **Gutter chevrons** — **▸** / **▾** between line numbers and content; folded body shows a clickable **…** placeholder (dark theme in `codemirror-theme.ts`).
 - **Keyboard** — **Ctrl/Cmd+Shift+[** fold at cursor, **Ctrl/Cmd+Shift+]** unfold; **Ctrl/Cmd+Alt+[** / **Ctrl/Cmd+Alt+]** fold/unfold all (`foldKeymap`).
-- **Fold state is session-only** — not stored in markdown or `localStorage` (resets on reload).
+- **Fold state is session-only** — not stored in markdown; persisted in `localStorage` key `snippet-notebook-folds` by anchor line text (`fold-persistence.ts`); save immediately on fold/unfold; **do not clear** stored folds on unmount when the editor has no folds yet (`saveFolds(view, false)`); cleared on **Reset to default** or when the user unfolds all.
+- **Copy with unset vars** — still copies resolved text, but shows a toast + warning styling on **Copy** when placeholders lack values (`prepareSnippetCopy`, `snippet-copy-click.ts`, `SnippetBar.tsx`).
 
 ### Syntax highlighting
 

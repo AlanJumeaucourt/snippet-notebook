@@ -31,6 +31,11 @@ import {
   scrollToLineInView,
 } from "~/lib/editor";
 import { computeFindMatchStats } from "~/lib/find-stats";
+import {
+  foldPersistenceListener,
+  restoreSavedFolds,
+  saveFolds,
+} from "~/lib/fold-persistence";
 import { setPlaceholderClickHandler } from "~/lib/placeholder-click";
 import {
   setSnippetCopyHandler,
@@ -202,6 +207,17 @@ export function DocumentEditor({
       }, 120),
     [],
   );
+
+  const saveFoldsDebounced = React.useMemo(
+    () => debounce((view: EditorView) => saveFolds(view), 400),
+    [],
+  );
+  const saveFoldsDebouncedRef = React.useRef(saveFoldsDebounced);
+  saveFoldsDebouncedRef.current = saveFoldsDebounced;
+
+  const saveFoldsNow = React.useCallback((view: EditorView) => saveFolds(view, true), []);
+  const saveFoldsNowRef = React.useRef(saveFoldsNow);
+  saveFoldsNowRef.current = saveFoldsNow;
 
   const applyDocFromUI = React.useCallback(
     (newDoc: string) => {
@@ -513,6 +529,10 @@ export function DocumentEditor({
           },
         ),
         findBarScrollMargin.of([]),
+        foldPersistenceListener(
+          (view) => saveFoldsDebouncedRef.current(view),
+          (view) => saveFoldsNowRef.current(view),
+        ),
         EditorView.updateListener.of((update) => {
           const view = update.view;
           if (update.docChanged && !applyingExternalRef.current) {
@@ -547,6 +567,7 @@ export function DocumentEditor({
     const view = new EditorView({ state, parent });
     viewRef.current = view;
     updateContext(view);
+    restoreSavedFolds(view);
     if (document.activeElement === document.body) {
       requestAnimationFrame(() => view.focus());
     }
@@ -557,7 +578,12 @@ export function DocumentEditor({
     };
     view.scrollDOM.addEventListener("scroll", onScroll, { passive: true });
 
+    const onPageHide = () => saveFolds(view, false);
+    window.addEventListener("pagehide", onPageHide);
+
     return () => {
+      window.removeEventListener("pagehide", onPageHide);
+      saveFolds(view, false);
       view.scrollDOM.removeEventListener("scroll", onScroll);
       view.destroy();
       viewRef.current = null;

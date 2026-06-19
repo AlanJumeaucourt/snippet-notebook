@@ -153,6 +153,34 @@
     background: color-mix(in srgb, var(--green) 12%, var(--input-bg)) !important;
   }
 
+  .cm-snippet-copy-btn--warning {
+    color: var(--danger) !important;
+    border-color: var(--danger) !important;
+    background: color-mix(in srgb, var(--danger) 12%, var(--input-bg)) !important;
+  }
+
+  .snippet-copy-unresolved-toast {
+    position: fixed;
+    z-index: 50;
+    left: 50%;
+    bottom: max(1rem, env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    max-width: min(92vw, 28rem);
+    padding: 0.5rem 0.875rem;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--text-bright);
+    background: color-mix(in srgb, var(--danger) 18%, var(--panel));
+    border: 1px solid color-mix(in srgb, var(--danger) 55%, var(--border));
+    border-radius: 6px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+    pointer-events: none;
+  }
+
+  .snippet-copy-unresolved-toast[hidden] {
+    display: none;
+  }
+
   input,
   select,
   button {
