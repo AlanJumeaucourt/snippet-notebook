@@ -107,7 +107,11 @@ export function useNotebookSync(getLocalDocument: () => string, options?: { enab
     const savedPass = loadSyncPassphrase();
     if (!savedRoom || !savedPass) return;
     setRoomId(savedRoom);
-    void connect(savedRoom, savedPass);
+    // Let the editor restore scroll/folds before remounting for yCollab.
+    const timer = window.setTimeout(() => {
+      void connect(savedRoom, savedPass);
+    }, 400);
+    return () => window.clearTimeout(timer);
   }, [connect, enabled]);
 
   React.useEffect(() => {

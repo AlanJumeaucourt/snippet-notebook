@@ -1,5 +1,6 @@
 import { initialNotebook } from "./defaults";
 import { clearSavedFolds } from "./fold-persistence";
+import { clearSavedScroll } from "./scroll-persistence";
 import type { NotebookData } from "./types";
 
 const STORAGE_KEY = "snippet-notebook";
@@ -26,6 +27,7 @@ export function clearNotebookStorage(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem(STORAGE_KEY);
   clearSavedFolds();
+  clearSavedScroll();
 }
 
 export { initialNotebook };

@@ -36,6 +36,7 @@ import {
   restoreSavedFolds,
   saveFolds,
 } from "~/lib/fold-persistence";
+import { restoreSavedScroll, saveScroll, focusEditorWithoutScroll } from "~/lib/scroll-persistence";
 import { setPlaceholderClickHandler } from "~/lib/placeholder-click";
 import {
   setSnippetCopyHandler,
@@ -218,6 +219,15 @@ export function DocumentEditor({
   const saveFoldsNow = React.useCallback((view: EditorView) => saveFolds(view, true), []);
   const saveFoldsNowRef = React.useRef(saveFoldsNow);
   saveFoldsNowRef.current = saveFoldsNow;
+
+  const saveScrollDebounced = React.useMemo(
+    () => debounce((view: EditorView) => saveScroll(view), 100),
+    [],
+  );
+  const saveScrollDebouncedRef = React.useRef(saveScrollDebounced);
+  saveScrollDebouncedRef.current = saveScrollDebounced;
+
+  const skipScrollSaveRef = React.useRef(false);
 
   const applyDocFromUI = React.useCallback(
     (newDoc: string) => {
@@ -567,23 +577,41 @@ export function DocumentEditor({
     const view = new EditorView({ state, parent });
     viewRef.current = view;
     updateContext(view);
-    restoreSavedFolds(view);
-    if (document.activeElement === document.body) {
-      requestAnimationFrame(() => view.focus());
-    }
+    skipScrollSaveRef.current = true;
+    restoreSavedFolds(view, 0, () => {
+      restoreSavedScroll(view, () => {
+        if (document.activeElement === document.body) {
+          focusEditorWithoutScroll(view);
+        }
+        requestAnimationFrame(() => {
+          skipScrollSaveRef.current = false;
+        });
+      });
+    });
 
     const onScroll = () => {
       if (!applyingExternalRef.current) updateContext(view, "scroll");
       syncPreviewPanelAnchorRef.current();
+      if (!skipScrollSaveRef.current) {
+        saveScrollDebouncedRef.current(view);
+      }
     };
     view.scrollDOM.addEventListener("scroll", onScroll, { passive: true });
 
-    const onPageHide = () => saveFolds(view, false);
+    const onPageHide = () => {
+      saveFolds(view, false);
+      saveScroll(view);
+    };
     window.addEventListener("pagehide", onPageHide);
 
     return () => {
       window.removeEventListener("pagehide", onPageHide);
       saveFolds(view, false);
+      if (view.scrollDOM.scrollTop > 0) {
+        saveScroll(view);
+      } else if (!skipScrollSaveRef.current) {
+        saveScroll(view, { skipIfZero: true });
+      }
       view.scrollDOM.removeEventListener("scroll", onScroll);
       view.destroy();
       viewRef.current = null;

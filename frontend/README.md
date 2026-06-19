@@ -37,6 +37,7 @@ Open [http://localhost:3000](http://localhost:3000).
 - **New section** — `Ctrl+N` or “+ Section” at the bottom of the sidebar.
 - **Find** — `Ctrl+F` / `Cmd+F`: overlay search bar, match highlights, `3 / 12` counter, ▲/▼ (Shift+Enter / Enter).
 - **Fold** — click **▸** in the gutter to collapse a heading section or fenced code/`vars` block; **Ctrl/Cmd+Shift+[** fold, **Ctrl/Cmd+Shift+]** unfold at cursor. Fold state is restored on reload (stored separately from the markdown).
+- **Scroll position** — where you were reading is restored on reload (stored separately from the markdown).
 - **Copy unset vars** — copying a snippet with empty/missing `{{variables}}` still copies but shows a warning toast.
 - Data is stored in `localStorage` under `snippet-notebook`.
 - **Sync (optional)** — sidebar **Sync**: same room name + passphrase on each device; realtime P2P edit via WebRTC (no notebook stored on a sync server). Configure signaling/TURN in `.env.local` — see `frontend/.env.example` and [`sync/README.md`](../sync/README.md).

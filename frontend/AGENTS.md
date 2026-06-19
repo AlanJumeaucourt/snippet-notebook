@@ -168,6 +168,7 @@ Files: `DocumentEditor.tsx`, `find-stats.ts`, `editor.ts` (`FIND_BAR_*`, `findBa
 - **Gutter chevrons** — **▸** / **▾** between line numbers and content; folded body shows a clickable **…** placeholder (dark theme in `codemirror-theme.ts`).
 - **Keyboard** — **Ctrl/Cmd+Shift+[** fold at cursor, **Ctrl/Cmd+Shift+]** unfold; **Ctrl/Cmd+Alt+[** / **Ctrl/Cmd+Alt+]** fold/unfold all (`foldKeymap`).
 - **Fold state is session-only** — not stored in markdown; persisted in `localStorage` key `snippet-notebook-folds` by anchor line text (`fold-persistence.ts`); save immediately on fold/unfold; **do not clear** stored folds on unmount when the editor has no folds yet (`saveFolds(view, false)`); cleared on **Reset to default** or when the user unfolds all.
+- **Scroll position** — persisted in `localStorage` key `snippet-notebook-scroll` (`scroll-persistence.ts`); restored after folds on reload; **focus uses `preventScroll`** so restore is not undone; unmount must not write `scrollTop: 0` during restore (`skipIfZero` / skip while `skipScrollSaveRef`); sync auto-connect delayed 400ms so scroll restores before yCollab remount (`useNotebookSync.ts`); cleared on **Reset to default**.
 - **Copy with unset vars** — still copies resolved text, but shows a toast + warning styling on **Copy** when placeholders lack values (`prepareSnippetCopy`, `snippet-copy-click.ts`, `SnippetBar.tsx`).
 
 ### Syntax highlighting

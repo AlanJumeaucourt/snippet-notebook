@@ -127,19 +127,26 @@ export function applySavedFolds(view: EditorView): number {
 
 const MAX_RESTORE_ATTEMPTS = 40;
 
-export function restoreSavedFolds(view: EditorView, attempt = 0): void {
-  if (!loadSavedFolds().length) return;
+export function restoreSavedFolds(view: EditorView, attempt = 0, onDone?: () => void): void {
+  const saved = loadSavedFolds();
+  if (!saved.length) {
+    onDone?.();
+    return;
+  }
 
   forceParsing(view, view.state.doc.length, 200);
   if (!syntaxTreeAvailable(view.state) && attempt < MAX_RESTORE_ATTEMPTS) {
-    window.requestAnimationFrame(() => restoreSavedFolds(view, attempt + 1));
+    window.requestAnimationFrame(() => restoreSavedFolds(view, attempt + 1, onDone));
     return;
   }
 
   const applied = applySavedFolds(view);
   if (applied === 0 && attempt < MAX_RESTORE_ATTEMPTS) {
-    window.requestAnimationFrame(() => restoreSavedFolds(view, attempt + 1));
+    window.requestAnimationFrame(() => restoreSavedFolds(view, attempt + 1, onDone));
+    return;
   }
+
+  onDone?.();
 }
 
 export function foldPersistenceListener(
